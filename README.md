@@ -1,4 +1,4 @@
-# SO-Architecture-BoilerPlate
+# SO-Architecture-Boilerplate
 Unity code architecture boilerplate based on the [Ryan Hipple's 2017 Unite talk](https://www.youtube.com/watch?v=raQ3iHhE_Kk)
 
 # Features
