@@ -2,6 +2,6 @@ using UnityEngine;
 namespace HosseinPan.Core
 {
     [CreateAssetMenu(fileName = "VoidEvent.asset",
-                    menuName = "HosseinPan/Events/Void Event")]
+                    menuName = SOMenuItemPaths.EventSO_VoidEventSO + "Void Event")]
     public class VoidEventSO : BaseEventSO { }
 }

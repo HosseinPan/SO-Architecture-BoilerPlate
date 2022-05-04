@@ -26,14 +26,13 @@ namespace HosseinPan.Examples
 
         private void OnEnable()
         {
-            _stateMachine.OnEnable();
+            _stateMachine.OnEnableGameObject();
         }
 
         private void OnDisable()
         {
-            _stateMachine.OnDisable();
+            _stateMachine.OnDisableGameObject();
         }
-
 
         private void Update()
         {
@@ -48,18 +47,15 @@ namespace HosseinPan.Examples
             var secondState = new SecondState();
             var thirdState = new ThirdState();
 
-            _stateMachine.AddTransition(firstState, 
-                                        secondState,
+            _stateMachine.AddTransition(new TransitioningStates { From= firstState , To = secondState },
                                         new List<VoidEventSO>() { _conditionEvent1, _conditionEvent2 });
 
-            _stateMachine.AddTransition(secondState, 
-                                        thirdState,
-                                        CheckThirdStateCondition,
-                                        ResetThirdStateCondition);
+            _stateMachine.AddTransition(new TransitioningStates { From = firstState, To = secondState },
+                                        new ConditionWithReset { Condition = CheckThirdStateCondition ,
+                                                                ResetCondition = ResetThirdStateCondition});
 
             _stateMachine.SetState(firstState);
         }
-
 
         private bool CheckThirdStateCondition()
         {

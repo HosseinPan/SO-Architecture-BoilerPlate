@@ -5,7 +5,7 @@ namespace HosseinPan.Core
 {
     public partial class StateMachine
     {
-        private class EventListCondition : ITransitionCondition
+        private class EventsCondition : ITransitionCondition
         {
             private List<VoidEventSO> _events;
 
@@ -14,7 +14,7 @@ namespace HosseinPan.Core
 
             public bool IsMet { get; private set; }
 
-            public EventListCondition(List<VoidEventSO> events)
+            public EventsCondition(List<VoidEventSO> events)
             {
                 IsMet = false;
                 _events = events;

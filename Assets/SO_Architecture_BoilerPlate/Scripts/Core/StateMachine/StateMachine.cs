@@ -5,17 +5,18 @@ namespace HosseinPan.Core
 {
     public partial class StateMachine
     {
-        private Dictionary<Type, List<TransitionState>> _totalTransitions = new Dictionary<Type, List<TransitionState>>();
-        private List<TransitionState> _currentTransitions = new List<TransitionState>();
-        private static List<TransitionState> _emptyTransitions = new List<TransitionState>(0);
+        private Dictionary<Type, List<Transition>> _totalTransitions = new Dictionary<Type, List<Transition>>();
+        private List<Transition> _currentTransitions = new List<Transition>();
+        private static List<Transition> _emptyTransitions = new List<Transition>(0);
 
         private IState _currentState = default;
+        private List<EventsCondition> _totalEventsConditions = new List<EventsCondition>();
 
         public void Tick()
         {
             var transition = GetTransition();
             if (transition != null)
-                SetState(transition.To);
+                SetState(transition.ToState);
 
             _currentState?.Tick();
         }
@@ -33,80 +34,97 @@ namespace HosseinPan.Core
             _currentState?.OnEnter();
         }
 
-        public void AddTransition(IState from, IState to,
-                                    List<VoidEventSO> eventsCondition,
-                                    Func<bool> statementCondition,
-                                    Action resetCondition)
+        public void AddTransition(TransitioningStates transitioningStates,
+                                    List<VoidEventSO> conditionEvents,
+                                    ConditionWithReset conditionWithReset)
         {
-            CheckForCreateNewTransitionKey(from);
-            _totalTransitions[from.GetType()].Add(new TransitionState(to, eventsCondition, statementCondition, resetCondition));
+            var eventsCondition = CreateEventsCondition(conditionEvents);
+            var statementCondition = new StatementCondition(conditionWithReset);
+
+            var conditions = new List<ITransitionCondition>();           
+            conditions.Add(eventsCondition);
+            conditions.Add(statementCondition);
+
+            CreateTransition(transitioningStates, conditions);
         }
 
-        public void AddTransition(IState from, IState to,
-                                    List<VoidEventSO> eventsCondition)
+        public void AddTransition(TransitioningStates transitioningStates,
+                                    List<VoidEventSO> conditionEvents)
         {
-            CheckForCreateNewTransitionKey(from);
-            _totalTransitions[from.GetType()].Add(new TransitionState(to, eventsCondition));
+            var eventsCondition = CreateEventsCondition(conditionEvents);
+
+            var conditions = new List<ITransitionCondition>();
+            conditions.Add(eventsCondition);
+
+            CreateTransition(transitioningStates, conditions);
         }
 
-        public void AddTransition(IState from, IState to,
-                                    Func<bool> statementCondition,
-                                    Action resetCondition)
+        public void AddTransition(TransitioningStates transitioningStates,
+                                    ConditionWithReset conditionWithReset)
         {
-            CheckForCreateNewTransitionKey(from);
-            _totalTransitions[from.GetType()].Add(new TransitionState(to, statementCondition, resetCondition));
+            var statementCondition = new StatementCondition(conditionWithReset);
+
+            var conditions = new List<ITransitionCondition>();
+            conditions.Add(statementCondition);
+
+            CreateTransition(transitioningStates, conditions);
         }
 
-
-
-        public void OnEnable()
+        public void OnEnableGameObject()
         {
             SubscribeConditionEvents();
         }
 
-        public void OnDisable()
+        public void OnDisableGameObject()
         {
             UnsubscribeConditionEvents();
         }
 
-        private void CheckForCreateNewTransitionKey(IState fromState)
+        private EventsCondition CreateEventsCondition(List<VoidEventSO> conditionEvents)
+        {
+            var eventsCondition = new EventsCondition(conditionEvents);
+            _totalEventsConditions.Add(eventsCondition);
+            return eventsCondition;
+        }
+
+        private void AddTransitionTo_TotalTransitions(IState fromState, Transition transition)
+        {
+            CheckToCreateNewTransitionKey(fromState);
+            _totalTransitions[fromState.GetType()].Add(transition);
+        }
+
+        private void CreateTransition(TransitioningStates transitioningStates, List<ITransitionCondition> conditions)
+        {
+            var transition = new Transition(transitioningStates.To, conditions);
+            AddTransitionTo_TotalTransitions(transitioningStates.From, transition);
+        }
+
+        private void CheckToCreateNewTransitionKey(IState fromState)
         {
             if (_totalTransitions.TryGetValue(fromState.GetType(), out var transitions) == false)
             {
-                transitions = new List<TransitionState>();
+                transitions = new List<Transition>();
                 _totalTransitions[fromState.GetType()] = transitions;
             }
         }
 
         private void SubscribeConditionEvents()
         {
-            foreach (var transitionList in _totalTransitions.Values)
+            foreach (var eventsCondition in _totalEventsConditions)
             {
-                if (transitionList != null)
-                {
-                    for (int i = 0; i < transitionList.Count; i++)
-                    {
-                        transitionList[i].SubscribeEvents();
-                    }
-                }
+                eventsCondition.SubscribeEvents();
             }
         }
 
         private void UnsubscribeConditionEvents()
         {
-            foreach (var transitionList in _totalTransitions.Values)
+            foreach (var eventsCondition in _totalEventsConditions)
             {
-                if (transitionList != null)
-                {
-                    for (int i = 0; i < transitionList.Count; i++)
-                    {
-                        transitionList[i].UnsubscribeEvents();
-                    }
-                }
+                eventsCondition.UnsubscribeEvents();
             }
         }
 
-        private TransitionState GetTransition()
+        private Transition GetTransition()
         {
             for (int i = 0; i < _currentTransitions.Count; i++)
             {
